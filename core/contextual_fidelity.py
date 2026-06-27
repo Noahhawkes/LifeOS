@@ -41,12 +41,20 @@ def _contains_any(text: str, terms: set[str]) -> bool:
 def _contains_term(text: str, term: str) -> bool:
     parts = [part for part in re.split(r"\s+", term.strip()) if part]
     token = r"\s+".join(re.escape(part) for part in parts) if parts else re.escape(term)
-    pattern = rf"(?<![a-z0-9_]){token}(?![a-z0-9_])"
+    pattern = rf"(?<![a-z0-9]){token}(?![a-z0-9])"
     return re.search(pattern, text, flags=re.IGNORECASE) is not None
 
 
 def _contains_any_term(text: str, terms: set[str]) -> bool:
     return any(_contains_term(text, term) for term in terms)
+
+
+def _has_disallowed_recall_claim(text: str) -> bool:
+    patterns = (
+        r"\b100\s*%\s*recall[-\s]*fidelity\b",
+        r"\b100\s*percent\s*recall[-\s]*fidelity\b",
+    )
+    return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in patterns)
 
 
 def _pick_mode(text: str, seriousness_level: str) -> str:
@@ -252,7 +260,7 @@ def apply_fidelity_rules(draft_response: str, policy: dict) -> dict:
     if policy.get("response_mode") == "playful_lore" and _contains_any_term(text, _FICTIONAL_TERMS) and not labeled_play:
         violations.append("Playful lore content must be explicitly labeled.")
 
-    if "100% recall fidelity" in text:
+    if _has_disallowed_recall_claim(text):
         violations.append("Disallowed absolute recall claim detected.")
 
     approved = not violations

@@ -116,8 +116,14 @@ def test_module_does_not_call_external_integrations():
 
 def test_no_claim_of_100_percent_recall_is_made():
     policy = build_context_policy("Simple factual check.", {})
-    result = apply_fidelity_rules("This has 100% recall fidelity.", policy)
-    assert result["approved"] is False
+    for claim in (
+        "This has 100% recall fidelity.",
+        "This has 100 % recall fidelity.",
+        "This has 100% recall-fidelity.",
+        "This has 100 percent recall fidelity.",
+    ):
+        result = apply_fidelity_rules(claim, policy)
+        assert result["approved"] is False
 
 
 def test_uses_maximum_provenance_backed_recall_fidelity_phrase():
