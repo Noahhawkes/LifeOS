@@ -37,7 +37,8 @@ def _contains_any(text: str, terms: set[str]) -> bool:
 
 
 def _contains_term(text: str, term: str) -> bool:
-    token = re.escape(term)
+    parts = [part for part in re.split(r"\s+", term.strip()) if part]
+    token = r"\s+".join(re.escape(part) for part in parts) if parts else re.escape(term)
     pattern = rf"(?<![a-z0-9_]){token}(?![a-z0-9_])"
     return re.search(pattern, text, flags=re.IGNORECASE) is not None
 
