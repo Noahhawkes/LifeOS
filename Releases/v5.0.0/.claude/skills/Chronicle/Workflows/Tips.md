@@ -16,7 +16,15 @@ Run all four reads simultaneously:
 cat ~/.claude/PAI/MEMORY/SKILLS/execution.jsonl 2>/dev/null
 ```
 
-Parse each JSONL line. Extract:
+**If the file is empty or missing:** Output the following note, then continue to Phase 1B–1D and skip all frequency-based analysis (Patterns A, C, D, E):
+
+```
+ℹ️ No execution history found (execution.jsonl is empty or missing).
+Tips will be based on TELOS goals and available skills only.
+Run more PAI skills to unlock richer, usage-driven recommendations.
+```
+
+Otherwise, parse each JSONL line and extract:
 - `skill` — which skill was invoked
 - `workflow` — which workflow within that skill
 - `status` — ok or error
@@ -70,7 +78,7 @@ Extract goal keywords and challenge themes. These form the "relevance filter" �
 Read the frontmatter `name:` and `description:` from every SKILL.md:
 
 ```bash
-find ~/.claude/skills/ -name "SKILL.md" -maxdepth 2 | while read f; do
+find ~/.claude/skills/ -maxdepth 2 -name "SKILL.md" | while read f; do
   head -10 "$f"
   echo "---FILE_SEP---"
 done
@@ -171,7 +179,7 @@ Things the user does well already that are worth being intentional about.
 ```
 
 **Rules for tip quality:**
-- Every tip must cite specific evidence from the data (`"you've run Research 23 times"`, `"WriteStory has 0 runs despite 'write more' goal"`)
+- Every tip must cite specific evidence from the data (`"You've run Research 23 times"`, `"WriteStory has 0 runs despite 'write more' goal"`)
 - No generic PAI advice — tips must be personalized to THIS user's actual patterns
 - Action must be specific: exact skill invocation, workflow name, or concrete step
 - If execution.jsonl is empty, skip frequency-based tips and rely entirely on goal-skill gap analysis

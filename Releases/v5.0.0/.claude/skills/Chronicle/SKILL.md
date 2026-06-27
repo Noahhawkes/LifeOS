@@ -104,10 +104,12 @@ cat ~/.claude/PAI/MEMORY/STATE/session-names.json 2>/dev/null
 **Step 2 — Filter by date window:**
 Use the `--days` argument (default 30) to filter entries by their timestamp.
 
-**Step 3 — Scan WORK/ directories for recent ISAs:**
+**Step 3 — Scan WORK/ directories for recent entries:**
 ```bash
-find ~/.claude/PAI/MEMORY/WORK/ -maxdepth 1 -type d -newer $(date -d "-${DAYS} days" +%Y-%m-%d 2>/dev/null || date -v-${DAYS}d +%Y-%m-%d) 2>/dev/null | tail -20
+# List WORK/ directories sorted by modification time, let date filtering happen via ls -t
+ls -t ~/.claude/PAI/MEMORY/WORK/ 2>/dev/null | head -20
 ```
+Filter the resulting names by their embedded date prefix (format `YYYY-MM-DD-*`) against the cutoff date derived from `--days`.
 
 **Step 4 — Output:**
 
@@ -141,7 +143,7 @@ cat ~/.claude/PAI/MEMORY/SKILLS/execution.jsonl 2>/dev/null
 
 **Step 2 — Read all available skills:**
 ```bash
-find ~/.claude/skills/ -name "SKILL.md" -maxdepth 2
+find ~/.claude/skills/ -maxdepth 2 -name "SKILL.md"
 ```
 For each, extract the `name:` and `description:` from frontmatter.
 
