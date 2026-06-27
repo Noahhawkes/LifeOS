@@ -30,6 +30,8 @@ _PLAY_TERMS = {"joke", "fun", "play", "myth", "lore", "story", "improv"}
 _BUILD_TERMS = {"build", "deploy", "run", "execute", "migration", "operator"}
 _PASSIVE_CONTINUITY_TERMS = {"continue", "as-is", "verbatim", "raw text", "do not rewrite", "keep exact"}
 _SUPPORTIVE_TERMS = {"grief", "vulnerable", "support", "overwhelmed", "tired"}
+_UNSUPPORTED_CERTAINTY_TERMS = {"definitely", "certainly", "100% sure", "guaranteed"}
+_FICTIONAL_TERMS = {"dragon", "wizard", "mythic", "made up", "imagined", "unicorn", "magic spell", "fairy"}
 
 
 def _contains_any(text: str, terms: set[str]) -> bool:
@@ -76,7 +78,7 @@ def classify_seriousness(message: str, context: dict | None = None) -> dict:
     context = context or {}
 
     critical = _contains_any_term(text, {"self-harm", "suicide", "crisis"}) or _contains_any_term(
-        text, {"api key", "credentials", "account password"}
+        text, {"api key", "credentials", "account password", "password"}
     )
     high = (
         _contains_any(text, _LEGAL_TERMS | _HEALTH_TERMS | _FINANCIAL_TERMS | _IDENTITY_TERMS | _ACTION_TERMS)
@@ -239,17 +241,15 @@ def apply_fidelity_rules(draft_response: str, policy: dict) -> dict:
         "public_witness",
     }
 
-    unsupported_certainty_terms = {"definitely", "certainly", "100% sure", "guaranteed"}
-    if _contains_any_term(text, unsupported_certainty_terms) and policy.get("required_basis_labels", False):
+    if _contains_any_term(text, _UNSUPPORTED_CERTAINTY_TERMS) and policy.get("required_basis_labels", False):
         violations.append("Unsupported certainty without explicit basis labels.")
 
-    fictional_terms = {"dragon", "wizard", "mythic", "made up", "imagined", "unicorn", "magic spell", "fairy"}
     labeled_play = "[play]" in text or "[fiction]" in text or "[lore]" in text
-    if serious_mode and _contains_any_term(text, fictional_terms):
+    if serious_mode and _contains_any_term(text, _FICTIONAL_TERMS):
         violations.append("Fictionalized content in serious context is not allowed.")
-    if policy.get("max_imagination_level") == "none" and _contains_any_term(text, fictional_terms):
+    if policy.get("max_imagination_level") == "none" and _contains_any_term(text, _FICTIONAL_TERMS):
         violations.append("Imagination exceeds allowed level for this policy.")
-    if policy.get("response_mode") == "playful_lore" and _contains_any_term(text, fictional_terms) and not labeled_play:
+    if policy.get("response_mode") == "playful_lore" and _contains_any_term(text, _FICTIONAL_TERMS) and not labeled_play:
         violations.append("Playful lore content must be explicitly labeled.")
 
     if "100% recall fidelity" in text:
