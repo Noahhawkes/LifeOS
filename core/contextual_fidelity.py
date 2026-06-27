@@ -23,6 +23,9 @@ class ContextualFidelityEngine:
         r"password", r"api\s*key", r"bipolar", r"ada", r"disability", r"financial"
     ]
 
+    # Linguistic markers that indicate soft fabrication or narrative smoothing
+    SMOOTHING_INDICATORS = ["surely", "probably", "must have been", "imagine", "legendary"]
+
     @classmethod
     def classify_seriousness(cls, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -149,9 +152,9 @@ class ContextualFidelityEngine:
         # Test 2: Serious contexts disable all unauthorized fiction/hallucination metrics
         if policy["max_imagination_level"] == "none":
             # If imagination is forbidden, check for common linguistic indicators of soft fabrication or narrative smoothing
-            smoothing_indicators = ["surely", "probably", "must have been", "imagine", "legendary"]
-            for indicator in smoothing_indicators:
-                if f" {indicator} " in f" {draft_response.lower()} ":
+            draft_lower = draft_response.lower()
+            for indicator in cls.SMOOTHING_INDICATORS:
+                if f" {indicator} " in f" {draft_lower} ":
                     violations.append(f"Unsanctioned narrative smoothing marker '{indicator}' inside strict serious domain.")
 
         # Test 3: Ensure open context gaps are preserved openly rather than glossed over
