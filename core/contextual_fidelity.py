@@ -5,7 +5,7 @@ Program the AI with provenance, not prompts.
 
 from __future__ import annotations
 
-from typing import Any
+import re
 
 MAX_RECALL_TARGET = "maximum provenance-backed recall fidelity"
 
@@ -36,6 +36,16 @@ def _contains_any(text: str, terms: set[str]) -> bool:
     return any(term in text for term in terms)
 
 
+def _contains_term(text: str, term: str) -> bool:
+    token = re.escape(term)
+    pattern = rf"(?<![a-z0-9_]){token}(?![a-z0-9_])"
+    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+def _contains_any_term(text: str, terms: set[str]) -> bool:
+    return any(_contains_term(text, term) for term in terms)
+
+
 def _pick_mode(text: str, seriousness_level: str) -> str:
     if _contains_any(text, _LEGAL_TERMS):
         return "legal_boundary"
@@ -64,7 +74,7 @@ def classify_seriousness(message: str, context: dict | None = None) -> dict:
     text = (message or "").lower()
     context = context or {}
 
-    critical = _contains_any(text, {"self-harm", "suicide", "crisis"}) or _contains_any(
+    critical = _contains_any_term(text, {"self-harm", "suicide", "crisis"}) or _contains_any_term(
         text, {"api key", "credentials", "account password"}
     )
     high = (
@@ -120,7 +130,27 @@ def _compute_recall_confidence(available_context: dict) -> str:
 def _extract_open_holes(user_message: str, available_context: dict, mode: str) -> list[str]:
     holes = list(available_context.get("open_holes", []))
     text = (user_message or "").lower()
-    unknown_factual = any(text.startswith(prefix) for prefix in ("did ", "was ", "were ", "have ", "has ")) or "?" in text
+    question_prefixes = (
+        "did ",
+        "was ",
+        "were ",
+        "have ",
+        "has ",
+        "is ",
+        "can ",
+        "could ",
+        "would ",
+        "should ",
+        "when ",
+        "where ",
+        "what ",
+        "who ",
+        "why ",
+        "how ",
+    )
+    unknown_factual = text.strip().endswith("?") and (
+        any(text.strip().startswith(prefix) for prefix in question_prefixes) or _contains_any(text, _MEMORY_TERMS)
+    )
     if mode == "memory_recovery":
         unknown_factual = True
     if unknown_factual and not available_context.get("source_backed_facts"):
@@ -208,17 +238,17 @@ def apply_fidelity_rules(draft_response: str, policy: dict) -> dict:
         "public_witness",
     }
 
-    unsupported_certainty_terms = ("definitely", "certainly", "100% sure", "guaranteed")
-    if any(term in text for term in unsupported_certainty_terms) and policy.get("required_basis_labels", False):
+    unsupported_certainty_terms = {"definitely", "certainly", "100% sure", "guaranteed"}
+    if _contains_any_term(text, unsupported_certainty_terms) and policy.get("required_basis_labels", False):
         violations.append("Unsupported certainty without explicit basis labels.")
 
-    fictional_terms = ("dragon", "wizard", "mythic", "made up", "imagined")
+    fictional_terms = {"dragon", "wizard", "mythic", "made up", "imagined", "unicorn", "magic spell", "fairy"}
     labeled_play = "[play]" in text or "[fiction]" in text or "[lore]" in text
-    if serious_mode and any(term in text for term in fictional_terms):
+    if serious_mode and _contains_any_term(text, fictional_terms):
         violations.append("Fictionalized content in serious context is not allowed.")
-    if policy.get("max_imagination_level") == "none" and any(term in text for term in fictional_terms):
+    if policy.get("max_imagination_level") == "none" and _contains_any_term(text, fictional_terms):
         violations.append("Imagination exceeds allowed level for this policy.")
-    if policy.get("response_mode") == "playful_lore" and any(term in text for term in fictional_terms) and not labeled_play:
+    if policy.get("response_mode") == "playful_lore" and _contains_any_term(text, fictional_terms) and not labeled_play:
         violations.append("Playful lore content must be explicitly labeled.")
 
     if "100% recall fidelity" in text:
