@@ -38,8 +38,6 @@ Build:
 - **Recency map**: last-used date per skill
 - **Never-used list**: all skills in `~/.claude/skills/` whose names do NOT appear in the log
 
-If execution.jsonl is empty or missing: note this, skip frequency analysis, proceed to goal-based tips only.
-
 ### 1B. Session Registry
 
 ```bash
