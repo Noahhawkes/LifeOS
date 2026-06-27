@@ -102,6 +102,7 @@ Startup context is `@`-imported above (PRINCIPAL_IDENTITY, DA_IDENTITY, PROJECTS
 | Tools reference | `~/.claude/PAI/DOCUMENTATION/Tools/Tools.md` |
 | ISA format spec | `~/.claude/PAI/DOCUMENTATION/IsaFormat.md` |
 | Claude Code knowledge | `Agent(subagent_type="claude-code-guide")` |
+| Session history + usage tips | `Skill("Chronicle", "tips")` — `/chronicle tips\|stats\|review\|gaps` |
 
 ## {PRINCIPAL.NAME} — Identity & Voice
 
